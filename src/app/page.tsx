@@ -14,6 +14,12 @@ export default function Home() {
   });
   const [newVersion, setNewVersion] = useState("");
   const [releaseNotes, setReleaseNotes] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<{
+    version?: string;
+    releaseNotes?: string;
+    file?: string;
+  }>({});
 
   const fetchCurrentVersion = async () => {
     try {
@@ -29,42 +35,68 @@ export default function Home() {
     fetchCurrentVersion();
   }, []);
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file || !newVersion) return;
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
 
-      setUploadState({ isUploading: true, progress: 0 });
+    if (!newVersion.trim()) {
+      newErrors.version = "Version is required";
+    } else if (!/^\d+\.\d+\.\d+$/.test(newVersion.trim())) {
+      newErrors.version = "Version must be in format: x.x.x (e.g., 1.0.0)";
+    }
 
+    if (!releaseNotes.trim()) {
+      newErrors.releaseNotes = "Release notes are required";
+    }
+
+    if (!selectedFile) {
+      newErrors.file = "APK file is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpload = async () => {
+    if (!validateForm()) return;
+
+    setUploadState({ isUploading: true, progress: 0 });
+
+    try {
       const formData = new FormData();
-      formData.append("apk", file);
-      formData.append("version", newVersion);
-      formData.append("releaseNotes", releaseNotes);
+      formData.append("apk", selectedFile!);
+      formData.append("version", newVersion.trim());
+      formData.append("releaseNotes", releaseNotes.trim());
 
-      try {
-        const response = await fetch("/api/apk", {
-          method: "POST",
-          body: formData,
-        });
+      const response = await fetch("/api/apk", {
+        method: "POST",
+        body: formData,
+      });
 
-        if (!response.ok) throw new Error("Upload failed");
+      if (!response.ok) throw new Error("Upload failed");
 
-        const data = await response.json();
-        setCurrentVersion(data);
-        setNewVersion("");
-        setReleaseNotes("");
-        setUploadState({ isUploading: false, progress: 100 });
-      } catch (error) {
-        console.error("Failed to upload APK:", error);
-        setUploadState({
-          isUploading: false,
-          progress: 0,
-          error: "Failed to upload APK",
-        });
-      }
-    },
-    [newVersion, releaseNotes]
-  );
+      const data = await response.json();
+      setCurrentVersion(data);
+      setNewVersion("");
+      setReleaseNotes("");
+      setSelectedFile(null);
+      setUploadState({ isUploading: false, progress: 100 });
+    } catch (error) {
+      console.error("Failed to upload APK:", error);
+      setUploadState({
+        isUploading: false,
+        progress: 0,
+        error: "Failed to upload APK",
+      });
+    }
+  };
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setSelectedFile(file);
+      setErrors((prev) => ({ ...prev, file: undefined }));
+    }
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -81,7 +113,9 @@ export default function Home() {
 
         {/* Current Version Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Current Version</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">
+            Current Version
+          </h2>
           {currentVersion ? (
             <div className="space-y-2">
               <p className="text-gray-700">
@@ -111,38 +145,71 @@ export default function Home() {
           </h2>
 
           <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="New Version (e.g., 1.0.0)"
-              value={newVersion}
-              onChange={(e) => setNewVersion(e.target.value)}
-              className="w-full p-2 border rounded text-black"
-            />
-
-            <textarea
-              placeholder="Release Notes (optional)"
-              value={releaseNotes}
-              onChange={(e) => setReleaseNotes(e.target.value)}
-              className="w-full p-2 border rounded h-24 text-black"
-            />
-
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                ${
-                  isDragActive
-                    ? "border-blue-400 bg-blue-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-            >
-              <input {...getInputProps()} />
-              <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-600">
-                {isDragActive
-                  ? "Drop the APK file here"
-                  : "Drag and drop APK file here, or click to select"}
-              </p>
+            <div>
+              <input
+                type="text"
+                placeholder="New Version (e.g., 1.0.0)"
+                value={newVersion}
+                onChange={(e) => {
+                  setNewVersion(e.target.value);
+                  setErrors((prev) => ({ ...prev, version: undefined }));
+                }}
+                className="w-full p-2 border rounded text-black"
+              />
+              {errors.version && (
+                <p className="text-red-500 text-sm mt-1">{errors.version}</p>
+              )}
             </div>
+
+            <div>
+              <textarea
+                placeholder="Release Notes (required)"
+                value={releaseNotes}
+                onChange={(e) => {
+                  setReleaseNotes(e.target.value);
+                  setErrors((prev) => ({ ...prev, releaseNotes: undefined }));
+                }}
+                className="w-full p-2 border rounded h-24 text-black"
+              />
+              {errors.releaseNotes && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.releaseNotes}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+                  ${
+                    isDragActive
+                      ? "border-blue-400 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+              >
+                <input {...getInputProps()} />
+                <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-600">
+                  {isDragActive
+                    ? "Drop the APK file here"
+                    : selectedFile
+                    ? `Selected: ${selectedFile.name}`
+                    : "Drag and drop APK file here, or click to select"}
+                </p>
+              </div>
+              {errors.file && (
+                <p className="text-red-500 text-sm mt-1">{errors.file}</p>
+              )}
+            </div>
+
+            <button
+              onClick={handleUpload}
+              disabled={uploadState.isUploading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {uploadState.isUploading ? "Uploading..." : "Upload APK"}
+            </button>
 
             {uploadState.isUploading && (
               <div className="w-full bg-gray-200 rounded-full h-2.5">
