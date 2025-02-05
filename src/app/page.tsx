@@ -59,6 +59,16 @@ export default function Home() {
   const handleUpload = async () => {
     if (!validateForm()) return;
 
+    // Add file size check
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    if (selectedFile && selectedFile.size > MAX_FILE_SIZE) {
+      setErrors((prev) => ({
+        ...prev,
+        file: "File size exceeds 100MB limit",
+      }));
+      return;
+    }
+
     setUploadState({ isUploading: true, progress: 0 });
 
     try {
