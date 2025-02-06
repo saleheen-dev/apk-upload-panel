@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { FiUpload, FiDownload, FiInfo } from "react-icons/fi";
 import type { ApkVersion, UploadState } from "@components/types/apk";
+import { ApkListModal } from "@components/ApkListModal";
 
 export default function Home() {
   const [currentVersion, setCurrentVersion] = useState<ApkVersion | null>(null);
@@ -20,6 +21,8 @@ export default function Home() {
     releaseNotes?: string;
     file?: string;
   }>({});
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [allVersions, setAllVersions] = useState<ApkVersion[]>([]);
 
   const fetchCurrentVersion = async () => {
     try {
@@ -31,8 +34,19 @@ export default function Home() {
     }
   };
 
+  const fetchAllVersions = async () => {
+    try {
+      const response = await fetch("/api/apk/versions");
+      const data = await response.json();
+      setAllVersions(data);
+    } catch (error) {
+      console.error("Failed to fetch versions:", error);
+    }
+  };
+
   useEffect(() => {
     fetchCurrentVersion();
+    fetchAllVersions();
   }, []);
 
   const validateForm = () => {
@@ -85,11 +99,7 @@ export default function Home() {
       if (!response.ok) throw new Error("Upload failed");
 
       const data = await response.json();
-      setCurrentVersion(data);
-      setNewVersion("");
-      setReleaseNotes("");
-      setSelectedFile(null);
-      setUploadState({ isUploading: false, progress: 100 });
+      await handleUploadSuccess(data);
     } catch (error) {
       console.error("Failed to upload APK:", error);
       setUploadState({
@@ -98,6 +108,15 @@ export default function Home() {
         error: "Failed to upload APK",
       });
     }
+  };
+
+  const handleUploadSuccess = async (data: ApkVersion) => {
+    setCurrentVersion(data);
+    setNewVersion("");
+    setReleaseNotes("");
+    setSelectedFile(null);
+    setUploadState({ isUploading: false, progress: 100 });
+    await fetchAllVersions();
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -119,7 +138,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">APK Management</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">APK Management</h1>
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            View Version History
+          </button>
+        </div>
 
         {/* Current Version Section */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -238,6 +265,12 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        <ApkListModal
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          versions={allVersions}
+        />
       </div>
     </div>
   );
