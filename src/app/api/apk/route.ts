@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@components/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { z } from "zod";
 
 const BUCKET_NAME = "apks";

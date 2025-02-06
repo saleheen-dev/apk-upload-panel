@@ -4,8 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { FiUpload, FiDownload, FiInfo } from "react-icons/fi";
-import type { ApkVersion, UploadState } from "@components/types/apk";
-import { ApkListModal } from "@components/ApkListModal";
+import type { ApkVersion, UploadState } from "@/types/apk";
+import { ApkListModal } from "@/components/ApkListModal";
 
 export default function Home() {
   const [currentVersion, setCurrentVersion] = useState<ApkVersion | null>(null);
