@@ -1,5 +1,7 @@
 This is a SPA for uploading the APKs for implementation in the in-app-update feature in mobile apps.
 
+//next dev --turbopack
+
 ## Getting Started
 
 1. Clone the repository

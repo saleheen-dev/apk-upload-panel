@@ -19,12 +19,12 @@ const nextConfig: NextConfig = {
     ];
   },
   // Add this configuration for handling large files
-  api: {
-    bodyParser: {
-      sizeLimit: "100mb", // Set the size limit you need
-    },
-    responseLimit: "100mb",
-  },
+  // api: {
+  //   bodyParser: {
+  //     sizeLimit: "100mb",
+  //   },
+  //   responseLimit: "100mb",
+  // },
 };
 
 export default nextConfig;
