@@ -22,7 +22,7 @@ export async function GET() {
     const response = {
       id: versionData.id,
       version: versionData.version,
-      ur: downloadUrl,
+      url: downloadUrl,
       releaseNotes: versionData.release_notes || "",
       lastUpdated: versionData.last_updated,
       createdAt: versionData.created_at,
