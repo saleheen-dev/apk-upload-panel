@@ -41,7 +41,6 @@ export default function Home() {
       const data = await response.json();
       if (!data) throw new Error("No data returned from latest version API");
       data.download_url = await getDownloadUrl(data.version);
-      console.log("data", data);
       setCurrentVersion(data);
     } catch (error) {
       console.error("Failed to fetch current version:", error);
@@ -227,7 +226,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Current Version Section */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-black">
             Current Version
@@ -243,12 +241,7 @@ export default function Home() {
                 {new Date(currentVersion.last_updated).toLocaleDateString()}
               </p>
               <button
-                onClick={() =>
-                  handleDownload(
-                    currentVersion.download_url,
-                    currentVersion.version
-                  )
-                }
+                onClick={() => handleDownload(currentVersion)}
                 disabled={isDownloading === currentVersion.version}
                 className="inline-flex items-center gap-2 py-2 rounded-md text-blue-600 hover:text-blue-400  disabled:opacity-50 disabled:cursor-wait transition-all"
               >
@@ -280,7 +273,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Upload Section */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-black">
             Upload New Version

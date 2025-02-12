@@ -11,7 +11,7 @@ async function getDownloadUrl(fileName: string) {
     });
 
     const downloadUrl = await getSignedUrl(b2Client, command, {
-      expiresIn: 604800, // 7 days
+      expiresIn: 3600,
     });
 
     return downloadUrl;

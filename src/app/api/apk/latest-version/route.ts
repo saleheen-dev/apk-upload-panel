@@ -10,8 +10,6 @@ export async function GET() {
       .limit(1)
       .single();
 
-    console.log("versionData", versionData);
-
     if (versionError?.code === "PGRST116" || !versionData) {
       return NextResponse.json(null);
     }

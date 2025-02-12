@@ -47,3 +47,6 @@ public/apks/
 .cursorrules
 
 certificates
+
+app-release.apk
+/supabase
