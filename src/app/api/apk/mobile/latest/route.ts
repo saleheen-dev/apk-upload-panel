@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getDownloadUrl } from "../controllers";
+import { getDownloadUrl } from "../../controllers";
 
 export async function GET() {
   try {
@@ -18,11 +18,15 @@ export async function GET() {
     if (versionError) throw versionError;
 
     const downloadUrl = await getDownloadUrl(versionData.version);
+
     const response = {
+      id: versionData.id,
       version: versionData.version,
-      downloadUrl,
+      ur: downloadUrl,
       releaseNotes: versionData.release_notes || "",
       lastUpdated: versionData.last_updated,
+      createdAt: versionData.created_at,
+      isForceUpdate: false,
     };
 
     return NextResponse.json(response);
