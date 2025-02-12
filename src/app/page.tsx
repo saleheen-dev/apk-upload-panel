@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { FiUpload, FiDownload, FiInfo } from "react-icons/fi";
+import toast, { Toaster } from "react-hot-toast";
 import type { ApkVersion, UploadState } from "@/types/apk";
 import { ApkListModal } from "@/components/ApkListModal";
 
@@ -23,11 +24,24 @@ export default function Home() {
   }>({});
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [allVersions, setAllVersions] = useState<ApkVersion[]>([]);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
+  const getDownloadUrl = async (version: string) => {
+    const response = await fetch(
+      "/api/apk/download-url?" +
+        new URLSearchParams({
+          key: `app-v${version}.apk`,
+        }).toString()
+    );
+    return (await response.json()).downloadUrl;
+  };
   const fetchCurrentVersion = async () => {
     try {
-      const response = await fetch("/api/apk");
+      const response = await fetch("/api/apk/latest-version");
       const data = await response.json();
+      if (!data) throw new Error("No data returned from latest version API");
+      data.download_url = await getDownloadUrl(data.version);
+      console.log("data", data);
       setCurrentVersion(data);
     } catch (error) {
       console.error("Failed to fetch current version:", error);
@@ -73,33 +87,70 @@ export default function Home() {
   const handleUpload = async () => {
     if (!validateForm()) return;
 
-    // Add file size check
-    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-    if (selectedFile && selectedFile.size > MAX_FILE_SIZE) {
-      setErrors((prev) => ({
-        ...prev,
-        file: "File size exceeds 100MB limit",
-      }));
-      return;
-    }
-
-    setUploadState({ isUploading: true, progress: 0 });
+    const uploadToast = toast.loading("Starting upload...");
 
     try {
-      const formData = new FormData();
-      formData.append("apk", selectedFile!);
-      formData.append("version", newVersion.trim());
-      formData.append("releaseNotes", releaseNotes.trim());
+      setUploadState((prev) => ({ ...prev, progress: 10 }));
+      toast.loading("Getting upload URL...", { id: uploadToast });
 
-      const response = await fetch("/api/apk", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "/api/apk/presigned-url?" +
+          new URLSearchParams({
+            key: `app-v${newVersion}.apk`,
+          }).toString()
+      );
+
+      setUploadState((prev) => ({ ...prev, progress: 30 }));
+      toast.loading("Preparing file upload...", { id: uploadToast });
 
       if (!response.ok) throw new Error("Upload failed");
 
       const data = await response.json();
-      await handleUploadSuccess(data);
+      const fileContent = await selectedFile?.arrayBuffer();
+
+      setUploadState((prev) => ({ ...prev, progress: 50 }));
+      toast.loading("Uploading APK...", { id: uploadToast });
+
+      const uploadResponseFromB2 = await fetch(data.presignedUrl, {
+        method: "PUT",
+        mode: "cors",
+        body: fileContent,
+        headers: {
+          "Content-Type": "b2/x-auto",
+        },
+      });
+
+      setUploadState((prev) => ({ ...prev, progress: 80 }));
+      toast.loading("Finalizing upload...", { id: uploadToast });
+
+      if (
+        uploadResponseFromB2.status >= 200 &&
+        uploadResponseFromB2.status < 300
+      ) {
+        const payload = {
+          version: newVersion,
+          release_notes: releaseNotes,
+          last_updated: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        };
+
+        const saveVersion = await fetch("/api/apk/save-version", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!saveVersion.ok) throw new Error("Save version failed");
+
+        setUploadState((prev) => ({ ...prev, progress: 100 }));
+        toast.success("APK uploaded successfully!", { id: uploadToast });
+
+        await handleUploadSuccess(data);
+      } else {
+        throw new Error(`${uploadResponseFromB2.status} error from S3 API.`);
+      }
     } catch (error) {
       console.error("Failed to upload APK:", error);
       setUploadState({
@@ -107,6 +158,7 @@ export default function Home() {
         progress: 0,
         error: "Failed to upload APK",
       });
+      toast.error("Failed to upload APK", { id: uploadToast });
     }
   };
 
@@ -117,6 +169,7 @@ export default function Home() {
     setSelectedFile(null);
     setUploadState({ isUploading: false, progress: 100 });
     await fetchAllVersions();
+    await fetchCurrentVersion();
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -135,8 +188,34 @@ export default function Home() {
     maxFiles: 1,
   });
 
+  const handleDownload = async (version: ApkVersion) => {
+    try {
+      setIsDownloading(version.version);
+      const response = await fetch(await getDownloadUrl(version.version));
+      if (!response.ok) throw new Error("Download failed");
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `app-v${version.version}.apk`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Download started");
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download APK");
+    } finally {
+      setIsDownloading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      <Toaster position="top-right" />
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">APK Management</h1>
@@ -161,14 +240,40 @@ export default function Home() {
               </p>
               <p className="text-gray-700">
                 <span className="font-medium">Last Updated:</span>{" "}
-                {new Date(currentVersion.lastUpdated).toLocaleDateString()}
+                {new Date(currentVersion.last_updated).toLocaleDateString()}
               </p>
-              <a
-                href={currentVersion.downloadUrl}
-                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              <button
+                onClick={() =>
+                  handleDownload(
+                    currentVersion.download_url,
+                    currentVersion.version
+                  )
+                }
+                disabled={isDownloading === currentVersion.version}
+                className="inline-flex items-center gap-2 py-2 rounded-md text-blue-600 hover:text-blue-400  disabled:opacity-50 disabled:cursor-wait transition-all"
               >
-                <FiDownload /> Download APK
-              </a>
+                {isDownloading === currentVersion.version ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="w-4 h-4"
+                    >
+                      <FiUpload className="animate-spin" />
+                    </motion.div>
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <FiDownload className="w-4 h-4" />
+                    Download APK
+                  </>
+                )}
+              </button>
             </div>
           ) : (
             <p className="text-gray-500">No version available</p>
@@ -254,7 +359,19 @@ export default function Home() {
                   className="bg-blue-600 h-2.5 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${uploadState.progress}%` }}
-                />
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-white/20"
+                    animate={{
+                      opacity: [0, 0.5, 0],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                    }}
+                  />
+                </motion.div>
               </div>
             )}
 
@@ -270,6 +387,8 @@ export default function Home() {
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
           versions={allVersions}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
         />
       </div>
     </div>

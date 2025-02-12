@@ -5,16 +5,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FiDownload } from "react-icons/fi";
+import { FiDownload, FiUpload } from "react-icons/fi";
 import type { ApkVersion } from "@/types/apk";
+import { motion } from "framer-motion";
 
 interface ApkListModalProps {
   isOpen: boolean;
   onClose: () => void;
   versions: ApkVersion[];
+  onDownload: (version: ApkVersion) => Promise<void>;
+  isDownloading: string | null;
 }
 
-export function ApkListModal({ isOpen, onClose, versions }: ApkListModalProps) {
+export function ApkListModal({
+  isOpen,
+  onClose,
+  versions,
+  onDownload,
+  isDownloading,
+}: ApkListModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl bg-white">
@@ -50,9 +59,9 @@ export function ApkListModal({ isOpen, onClose, versions }: ApkListModalProps) {
                         <p className="text-sm text-gray-500">
                           {new Date(version.created_at).toLocaleString()}
                         </p>
-                        {version.releaseNotes && (
+                        {version.release_notes && (
                           <p className="mt-1 text-sm text-gray-600">
-                            {version.releaseNotes}
+                            {version.release_notes}
                           </p>
                         )}
                       </div>
@@ -60,13 +69,33 @@ export function ApkListModal({ isOpen, onClose, versions }: ApkListModalProps) {
                         <span className="text-sm text-gray-500">
                           {version.downloads} downloads
                         </span>
-                        <a
-                          href={version.downloadUrl}
-                          className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                        <button
+                          onClick={() => onDownload(version)}
+                          disabled={isDownloading === version.version}
+                          className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-wait"
                         >
-                          <FiDownload className="h-4 w-4" />
-                          Download
-                        </a>
+                          {isDownloading === version.version ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{
+                                  duration: 1,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                                className="w-4 h-4"
+                              >
+                                <FiUpload className="animate-spin" />
+                              </motion.div>
+                              Downloading...
+                            </>
+                          ) : (
+                            <>
+                              <FiDownload className="w-4 h-4" />
+                              Download
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </li>

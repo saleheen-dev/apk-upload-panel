@@ -9,6 +9,8 @@
     "B2_APPLICATION_KEY_ID": "@b2_application_key_id",
     "B2_APPLICATION_KEY": "@b2_application_key",
     "B2_BUCKET_NAME": "@b2_bucket_name",
-    "B2_ENDPOINT": "@b2_endpoint"
+    "B2_ENDPOINT": "@b2_endpoint",
+    "AWS_BUCKET_REGION": "@aws_bucket_region",
+    "AWS_ENDPOINT_URL": "@aws_endpoint_url"
   }
 }

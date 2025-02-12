@@ -1,9 +1,9 @@
 export interface ApkVersion {
   id: string;
   version: string;
-  downloadUrl: string;
-  releaseNotes?: string;
-  lastUpdated: string;
+  download_url: string;
+  release_notes?: string;
+  last_updated: string;
   downloads: number;
   created_at: string;
 }
