@@ -17,7 +17,7 @@ export async function GET() {
 
     if (versionError) throw versionError;
 
-    const downloadUrl = await getDownloadUrl(versionData.version);
+    const downloadUrl = await getDownloadUrl(`app-v${versionData.version}.apk`);
 
     const response = {
       id: versionData.id,
