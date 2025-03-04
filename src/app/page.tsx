@@ -39,7 +39,10 @@ export default function Home() {
     try {
       const response = await fetch("/api/apk/latest-version");
       const data = await response.json();
-      if (!data) throw new Error("No data returned from latest version API");
+      if (!data) {
+        console.log("No data returned from latest version API");
+        return;
+      }
       data.download_url = await getDownloadUrl(data.version);
       setCurrentVersion(data);
     } catch (error) {
@@ -381,6 +384,10 @@ export default function Home() {
           versions={allVersions}
           onDownload={handleDownload}
           isDownloading={isDownloading}
+          onVersionsChange={async () => {
+            await fetchAllVersions();
+            await fetchCurrentVersion();
+          }}
         />
       </div>
     </div>

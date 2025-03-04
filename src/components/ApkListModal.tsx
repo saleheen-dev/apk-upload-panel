@@ -5,9 +5,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FiDownload, FiUpload } from "react-icons/fi";
+import { FiDownload, FiUpload, FiTrash2 } from "react-icons/fi";
 import type { ApkVersion } from "@/types/apk";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface ApkListModalProps {
   isOpen: boolean;
@@ -15,6 +17,7 @@ interface ApkListModalProps {
   versions: ApkVersion[];
   onDownload: (version: ApkVersion) => Promise<void>;
   isDownloading: string | null;
+  onVersionsChange: () => Promise<void>;
 }
 
 export function ApkListModal({
@@ -23,7 +26,42 @@ export function ApkListModal({
   versions,
   onDownload,
   isDownloading,
+  onVersionsChange,
 }: ApkListModalProps) {
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (version: ApkVersion) => {
+    if (
+      !confirm(`Are you sure you want to delete version ${version.version}?`)
+    ) {
+      return;
+    }
+
+    try {
+      setIsDeleting(version.id);
+      const response = await fetch("/api/apk/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          version: version.version,
+          id: version.id,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to delete APK");
+
+      toast.success(`Version ${version.version} deleted successfully`);
+      await onVersionsChange();
+    } catch (error) {
+      console.error("Failed to delete APK:", error);
+      toast.error("Failed to delete APK");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl bg-white">
@@ -69,13 +107,40 @@ export function ApkListModal({
                         <span className="text-sm text-gray-500">
                           {version.downloads} downloads
                         </span>
-                        <button
-                          onClick={() => onDownload(version)}
-                          disabled={isDownloading === version.version}
-                          className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {isDownloading === version.version ? (
-                            <>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onDownload(version)}
+                            disabled={isDownloading === version.version}
+                            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-wait"
+                          >
+                            {isDownloading === version.version ? (
+                              <>
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{
+                                    duration: 1,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                  }}
+                                  className="w-4 h-4"
+                                >
+                                  <FiUpload className="animate-spin" />
+                                </motion.div>
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <FiDownload className="w-4 h-4" />
+                                Download
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(version)}
+                            disabled={isDeleting === version.id}
+                            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-wait"
+                          >
+                            {isDeleting === version.id ? (
                               <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{
@@ -87,15 +152,11 @@ export function ApkListModal({
                               >
                                 <FiUpload className="animate-spin" />
                               </motion.div>
-                              Downloading...
-                            </>
-                          ) : (
-                            <>
-                              <FiDownload className="w-4 h-4" />
-                              Download
-                            </>
-                          )}
-                        </button>
+                            ) : (
+                              <FiTrash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </li>
