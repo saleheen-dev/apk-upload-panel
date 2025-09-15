@@ -25,6 +25,9 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [allVersions, setAllVersions] = useState<ApkVersion[]>([]);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [fetchingCurrentV, setFetchingCurrentV] = useState(true);
+
+  console.log({ currentVersion });
 
   const getDownloadUrl = async (version: string) => {
     const response = await fetch(
@@ -41,12 +44,16 @@ export default function Home() {
       const data = await response.json();
       if (!data) {
         console.log("No data returned from latest version API");
+        setFetchingCurrentV(false);
         return;
       }
       data.download_url = await getDownloadUrl(data.version);
       setCurrentVersion(data);
+      setFetchingCurrentV(false);
     } catch (error) {
       console.error("Failed to fetch current version:", error);
+    } finally {
+      setFetchingCurrentV(false);
     }
   };
 
@@ -235,7 +242,12 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-4 text-black">
             Current Version
           </h2>
-          {currentVersion ? (
+
+          {fetchingCurrentV ? (
+            <p className="text-gray-500 text-center">
+              Fetching current version...
+            </p>
+          ) : currentVersion ? (
             <div className="space-y-2">
               <p className="text-gray-700">
                 <span className="font-medium">Version:</span>{" "}
@@ -274,7 +286,7 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <p className="text-gray-500">No version available</p>
+            <p className="text-gray-500 text-center">No version available</p>
           )}
         </div>
 
