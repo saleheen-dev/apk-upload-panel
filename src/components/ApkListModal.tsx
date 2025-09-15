@@ -104,9 +104,6 @@ export function ApkListModal({
                         )}
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">
-                          {version.downloads} downloads
-                        </span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => onDownload(version)}
@@ -135,27 +132,29 @@ export function ApkListModal({
                               </>
                             )}
                           </button>
-                          <button
-                            onClick={() => handleDelete(version)}
-                            disabled={isDeleting === version.id}
-                            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-wait"
-                          >
-                            {isDeleting === version.id ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{
-                                  duration: 1,
-                                  repeat: Infinity,
-                                  ease: "linear",
-                                }}
-                                className="w-4 h-4"
-                              >
-                                <FiUpload className="animate-spin" />
-                              </motion.div>
-                            ) : (
-                              <FiTrash2 className="w-4 h-4" />
-                            )}
-                          </button>
+                          {process.env.NODE_ENV === "development" && (
+                            <button
+                              onClick={() => handleDelete(version)}
+                              disabled={isDeleting === version.id}
+                              className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-wait"
+                            >
+                              {isDeleting === version.id ? (
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{
+                                    duration: 1,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                  }}
+                                  className="w-4 h-4"
+                                >
+                                  <FiUpload className="animate-spin" />
+                                </motion.div>
+                              ) : (
+                                <FiTrash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

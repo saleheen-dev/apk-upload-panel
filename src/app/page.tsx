@@ -216,14 +216,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-16">
       <Toaster position="top-right" />
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">APK Management</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
+            APK Management
+          </h1>
           <button
             onClick={() => setIsHistoryOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-2 sm:px-4 py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             View Version History
           </button>
@@ -276,107 +278,109 @@ export default function Home() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-black">
-            Upload New Version
-          </h2>
+        {process.env.NODE_ENV === "development" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-black">
+              Upload New Version
+            </h2>
 
-          <div className="space-y-4">
-            <div>
-              <input
-                type="text"
-                placeholder="New Version (e.g., 1.0.0)"
-                value={newVersion}
-                onChange={(e) => {
-                  setNewVersion(e.target.value);
-                  setErrors((prev) => ({ ...prev, version: undefined }));
-                }}
-                className="w-full p-2 border rounded text-black"
-              />
-              {errors.version && (
-                <p className="text-red-500 text-sm mt-1">{errors.version}</p>
-              )}
-            </div>
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="New Version (e.g., 1.0.0)"
+                  value={newVersion}
+                  onChange={(e) => {
+                    setNewVersion(e.target.value);
+                    setErrors((prev) => ({ ...prev, version: undefined }));
+                  }}
+                  className="w-full p-2 border rounded text-black"
+                />
+                {errors.version && (
+                  <p className="text-red-500 text-sm mt-1">{errors.version}</p>
+                )}
+              </div>
 
-            <div>
-              <textarea
-                placeholder="Release Notes (required)"
-                value={releaseNotes}
-                onChange={(e) => {
-                  setReleaseNotes(e.target.value);
-                  setErrors((prev) => ({ ...prev, releaseNotes: undefined }));
-                }}
-                className="w-full p-2 border rounded h-24 text-black"
-              />
-              {errors.releaseNotes && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.releaseNotes}
-                </p>
-              )}
-            </div>
+              <div>
+                <textarea
+                  placeholder="Release Notes (required)"
+                  value={releaseNotes}
+                  onChange={(e) => {
+                    setReleaseNotes(e.target.value);
+                    setErrors((prev) => ({ ...prev, releaseNotes: undefined }));
+                  }}
+                  className="w-full p-2 border rounded h-24 text-black"
+                />
+                {errors.releaseNotes && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.releaseNotes}
+                  </p>
+                )}
+              </div>
 
-            <div>
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+              <div>
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
                   ${
                     isDragActive
                       ? "border-blue-400 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400"
                   }`}
-              >
-                <input {...getInputProps()} />
-                <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-600">
-                  {isDragActive
-                    ? "Drop the APK file here"
-                    : selectedFile
-                    ? `Selected: ${selectedFile.name}`
-                    : "Drag and drop APK file here, or click to select"}
-                </p>
+                >
+                  <input {...getInputProps()} />
+                  <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-600">
+                    {isDragActive
+                      ? "Drop the APK file here"
+                      : selectedFile
+                      ? `Selected: ${selectedFile.name}`
+                      : "Drag and drop APK file here, or click to select"}
+                  </p>
+                </div>
+                {errors.file && (
+                  <p className="text-red-500 text-sm mt-1">{errors.file}</p>
+                )}
               </div>
-              {errors.file && (
-                <p className="text-red-500 text-sm mt-1">{errors.file}</p>
+
+              <button
+                onClick={handleUpload}
+                disabled={uploadState.isUploading}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {uploadState.isUploading ? "Uploading..." : "Upload APK"}
+              </button>
+
+              {uploadState.isUploading && (
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <motion.div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${uploadState.progress}%` }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <motion.div
+                      className="absolute inset-0 bg-white/20"
+                      animate={{
+                        opacity: [0, 0.5, 0],
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                      }}
+                    />
+                  </motion.div>
+                </div>
+              )}
+
+              {uploadState.error && (
+                <p className="text-red-500 flex items-center gap-2">
+                  <FiInfo /> {uploadState.error}
+                </p>
               )}
             </div>
-
-            <button
-              onClick={handleUpload}
-              disabled={uploadState.isUploading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {uploadState.isUploading ? "Uploading..." : "Upload APK"}
-            </button>
-
-            {uploadState.isUploading && (
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <motion.div
-                  className="bg-blue-600 h-2.5 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${uploadState.progress}%` }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-white/20"
-                    animate={{
-                      opacity: [0, 0.5, 0],
-                    }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                    }}
-                  />
-                </motion.div>
-              </div>
-            )}
-
-            {uploadState.error && (
-              <p className="text-red-500 flex items-center gap-2">
-                <FiInfo /> {uploadState.error}
-              </p>
-            )}
           </div>
-        </div>
+        )}
 
         <ApkListModal
           isOpen={isHistoryOpen}
