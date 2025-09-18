@@ -27,8 +27,6 @@ export default function Home() {
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [fetchingCurrentV, setFetchingCurrentV] = useState(true);
 
-  console.log({ currentVersion });
-
   const getDownloadUrl = async (version: string) => {
     const response = await fetch(
       "/api/apk/download-url?" +
