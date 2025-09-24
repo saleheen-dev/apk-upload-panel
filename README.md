@@ -2,6 +2,8 @@ This is a SPA for uploading the APKs for implementation in the in-app-update fea
 
 //next dev --turbopack
 
+Open upload in production
+
 ## Getting Started
 
 1. Clone the repository
