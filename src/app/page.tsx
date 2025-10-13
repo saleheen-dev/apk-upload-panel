@@ -198,24 +198,22 @@ export default function Home() {
   const handleDownload = async (version: ApkVersion) => {
     try {
       setIsDownloading(version.version);
-      const response = await fetch(await getDownloadUrl(version.version));
-      if (!response.ok) throw new Error("Download failed");
-
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const downloadUrl = await getDownloadUrl(version.version);
+      
+      // Create a hidden link and trigger the download directly from the presigned URL
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `app-v${version.version}.apk`;
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
 
       toast.success("Download started");
+      setIsDownloading(null)
     } catch (error) {
       console.error("Download failed:", error);
       toast.error("Failed to download APK");
-    } finally {
       setIsDownloading(null);
     }
   };
