@@ -50,3 +50,11 @@ certificates
 
 app-release.apk
 /supabase
+.codex
+.cursor
+.gemini
+.zed
+opencode.json
+.mcp.json
+config
+.vscode
